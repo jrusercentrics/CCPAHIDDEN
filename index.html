@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cookiebot CCPA X-Button Workaround Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap');
+
+    :root {
+      --bg: #0c0f1a;
+      --card: #151929;
+      --card-alt: #1a2035;
+      --text: #e2e8f4;
+      --muted: #7b8aab;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --green: #22c55e;
+      --green-glow: rgba(34, 197, 94, 0.15);
+      --orange: #f59e0b;
+      --orange-glow: rgba(245, 158, 11, 0.15);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.15);
+      --border: #252d44;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Outfit', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .header-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 14px;
+      display: grid; place-items: center;
+      font-size: 24px;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .header h1 span { color: var(--accent); }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: var(--mono);
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: pulse 2s infinite;
+    }
+    .status-dot.active { background: var(--green); }
+    .status-dot.warn { background: var(--orange); }
+    .status-dot.off { background: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Cards */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .card.full { grid-column: 1 / -1; }
+    .card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-alt);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .btn.accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.accent:hover {
+      background: #2563eb;
+    }
+
+    /* Console log */
+    #console {
+      background: #0a0d17;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.8;
+    }
+    #console:empty::before {
+      content: "Waiting for Cookiebot events...";
+      color: var(--muted);
+    }
+    .log-line {
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      display: flex;
+      gap: 10px;
+    }
+    .log-time {
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .log-tag {
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .log-tag.event { background: var(--accent-glow); color: var(--accent); }
+    .log-tag.intercept { background: var(--green-glow); color: var(--green); }
+    .log-tag.warn { background: var(--orange-glow); color: var(--orange); }
+    .log-tag.error { background: var(--red-glow); color: var(--red); }
+    .log-tag.info { background: rgba(255,255,255,0.05); color: var(--muted); }
+    .log-msg { color: var(--text); word-break: break-word; }
+
+    /* Info block */
+    .info-value {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .info-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Workaround toggle */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .toggle {
+      width: 52px; height: 28px;
+      background: var(--border);
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 22px; height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform 0.3s;
+    }
+    .toggle.on::after { transform: translateX(24px); }
+    .toggle-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+  </style>
+
+  <!-- ===== COOKIEBOT CMP ===== -->
+  <script
+    id="Cookiebot"
+    src="https://consent.cookiebot.com/uc.js"
+    data-cbid="cfbb8be3-724d-4eaa-b02b-2be5a68ed1fe"
+    data-blockingmode="auto"
+    type="text/javascript"
+  ></script>
+
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-icon">🍪</div>
+      <h1>Cookiebot <span>CCPA X-Button</span> Workaround</h1>
+    </div>
+
+    <!-- Status chips -->
+    <div class="status-bar">
+      <div class="status-chip">
+        <span class="status-dot" id="dotCookiebot"></span>
+        <span id="statusCookiebot">Cookiebot: loading...</span>
+      </div>
+      <div class="status-chip">
+        <span class="status-dot" id="dotFramework"></span>
+        <span id="statusFramework">Framework: detecting...</span>
+      </div>
+      <div class="status-chip">
+        <span class="status-dot" id="dotWorkaround"></span>
+        <span id="statusWorkaround">Workaround: OFF</span>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+      <!-- Workaround control -->
+      <div class="card">
+        <h2>Workaround Control</h2>
+        <p style="color:var(--muted); font-size:0.9rem; margin-bottom:16px;">
+          Toggle the CCPA X-button intercept on/off. When ON, clicking "X" will act as <strong>acknowledge/OK</strong> instead of decline.
+        </p>
+        <div class="toggle-wrap">
+          <div class="toggle on" id="workaroundToggle" onclick="toggleWorkaround()"></div>
+          <span class="toggle-label" id="workaroundLabel">Enabled</span>
+        </div>
+      </div>
+
+      <!-- Consent state -->
+      <div class="card">
+        <h2>Current Consent State</h2>
+        <div id="consentState" style="font-family:var(--mono); font-size:0.85rem; color:var(--muted);">
+          Waiting for Cookiebot...
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card full">
+        <h2>Actions</h2>
+        <div class="btn-row">
+          <button class="btn" onclick="renewConsent()">Cookiebot.renew()</button>
+          <button class="btn" onclick="withdrawConsent()">Cookiebot.withdraw()</button>
+          <button class="btn" onclick="checkRegulations()">Check Regulations</button>
+          <button class="btn" onclick="inspectCloseBtn()">Find X Button</button>
+          <button class="btn accent" onclick="clearLog()">Clear Log</button>
+        </div>
+      </div>
+
+      <!-- Console -->
+      <div class="card full">
+        <h2>Event Console</h2>
+        <div id="console"></div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+// ============================================================
+// LOGGING
+// ============================================================
+function log(tag, msg) {
+  const el = document.getElementById('console');
+  const now = new Date().toLocaleTimeString('en-GB');
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.innerHTML = `
+    <span class="log-time">${now}</span>
+    <span class="log-tag ${tag}">${tag.toUpperCase()}</span>
+    <span class="log-msg">${msg}</span>
+  `;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('console').innerHTML = '';
+  log('info', 'Console cleared.');
+}
+
+// ============================================================
+// WORKAROUND STATE
+// ============================================================
+let workaroundEnabled = true;
+let interceptAttached = false;
+
+function toggleWorkaround() {
+  workaroundEnabled = !workaroundEnabled;
+  const tog = document.getElementById('workaroundToggle');
+  const lbl = document.getElementById('workaroundLabel');
+  const dot = document.getElementById('dotWorkaround');
+  tog.classList.toggle('on', workaroundEnabled);
+  lbl.textContent = workaroundEnabled ? 'Enabled' : 'Disabled';
+  dot.className = 'status-dot ' + (workaroundEnabled ? 'active' : 'off');
+  document.getElementById('statusWorkaround').textContent =
+    'Workaround: ' + (workaroundEnabled ? 'ON' : 'OFF');
+  log('info', `Workaround toggled: <strong>${workaroundEnabled ? 'ON' : 'OFF'}</strong>`);
+
+  // If turning off, we can't easily remove the intercept, so just flag it
+  if (!workaroundEnabled) {
+    log('warn', 'Intercept will be skipped on next X click (flag-based).');
+  }
+}
+
+// ============================================================
+// CONSENT STATE DISPLAY
+// ============================================================
+function updateConsentState() {
+  const el = document.getElementById('consentState');
+  if (typeof Cookiebot === 'undefined' || !Cookiebot.consent) {
+    el.textContent = 'Cookiebot not ready';
+    return;
+  }
+  const c = Cookiebot.consent;
+  const lines = [
+    `necessary:    ${c.necessary ? '✅' : '❌'}`,
+    `preferences:  ${c.preferences ? '✅' : '❌'}`,
+    `statistics:   ${c.statistics ? '✅' : '❌'}`,
+    `marketing:    ${c.marketing ? '✅' : '❌'}`,
+    `method:       ${c.method || 'none'}`,
+    `stamp:        ${c.stamp || 'none'}`,
+  ];
+  el.innerHTML = lines.join('<br>');
+}
+
+// ============================================================
+// ACTION BUTTONS
+// ============================================================
+function renewConsent() {
+  if (typeof Cookiebot !== 'undefined') {
+    log('info', 'Calling Cookiebot.renew()...');
+    Cookiebot.renew();
+  } else {
+    log('error', 'Cookiebot not loaded.');
+  }
+}
+function withdrawConsent() {
+  if (typeof Cookiebot !== 'undefined') {
+    log('info', 'Calling Cookiebot.withdraw()...');
+    Cookiebot.withdraw();
+    setTimeout(updateConsentState, 500);
+  } else {
+    log('error', 'Cookiebot not loaded.');
+  }
+}
+function checkRegulations() {
+  if (typeof Cookiebot !== 'undefined' && Cookiebot.regulations) {
+    const r = Cookiebot.regulations;
+    const info = [
+      `gdprApplies: ${r.gdprApplies}`,
+      `ccpaApplies: ${r.ccpaApplies}`,
+      `lgpdApplies: ${r.lgpdApplies || 'N/A'}`,
+    ];
+    log('info', `Regulations → ${info.join(' | ')}`);
+  } else {
+    log('error', 'Cookiebot.regulations not available.');
+  }
+}
+
+// ============================================================
+// FIND & INSPECT THE X BUTTON
+// ============================================================
+function findCloseButton() {
+  // Known selectors for the Cookiebot close / X button
+  const selectors = [
+    '#CybotCookiebotDialogBodyButtonDecline',          // sometimes the X maps here
+    '#CybotCookiebotDialogBodyButtonAccept',
+    '.CybotCookiebotDialogBodyButtonClose',
+    '#CybotCookiebotDialogBodyCloseButton',
+    'button[aria-label="Close"]',
+    'button[aria-label="close"]',
+    '#CookiebotDialog button[tabindex]',
+    // Generic fallbacks
+    '#CookiebotDialog .CybotCookiebotDialogBodyButton:last-child',
+  ];
+
+  for (const sel of selectors) {
+    const btn = document.querySelector(sel);
+    if (btn) {
+      const text = (btn.textContent || '').trim().substring(0, 50);
+      const id = btn.id || '(no id)';
+      const cls = btn.className || '(no class)';
+      log('info', `Found candidate: <strong>${sel}</strong> → id="${id}" class="${cls}" text="${text}"`);
+    }
+  }
+
+  // Also look for any element that looks like an X / close icon inside the dialog
+  const dialog = document.getElementById('CookiebotDialog') || document.getElementById('CybotCookiebotDialog');
+  if (dialog) {
+    const allBtns = dialog.querySelectorAll('button, a[role="button"], [aria-label*="close" i], [aria-label*="Close"]');
+    log('info', `Total clickable elements inside dialog: <strong>${allBtns.length}</strong>`);
+    allBtns.forEach((b, i) => {
+      log('info', `  [${i}] tag=${b.tagName} id="${b.id}" class="${b.className}" text="${(b.textContent||'').trim().substring(0,30)}"`);
+    });
+  } else {
+    log('warn', 'Cookiebot dialog element not found in DOM. Is the banner visible?');
+  }
+}
+
+function inspectCloseBtn() {
+  log('info', '🔍 Scanning for X / close button...');
+  findCloseButton();
+}
+
+// ============================================================
+// THE WORKAROUND: INTERCEPT X BUTTON ON CCPA
+// ============================================================
+function attachXIntercept() {
+  if (interceptAttached) {
+    log('info', 'Intercept already attached, skipping.');
+    return;
+  }
+
+  // Detect framework
+  let isCCPA = false;
+  if (typeof Cookiebot !== 'undefined' && Cookiebot.regulations) {
+    isCCPA = Cookiebot.regulations.ccpaApplies === true;
+    log('info', `Regulation detected → GDPR: ${Cookiebot.regulations.gdprApplies} | CCPA: ${Cookiebot.regulations.ccpaApplies}`);
+  } else {
+    log('warn', 'Cookiebot.regulations not available at intercept time.');
+  }
+
+  // Update framework status
+  const dotFw = document.getElementById('dotFramework');
+  const statusFw = document.getElementById('statusFramework');
+  if (typeof Cookiebot !== 'undefined' && Cookiebot.regulations) {
+    if (Cookiebot.regulations.ccpaApplies) {
+      dotFw.className = 'status-dot active';
+      statusFw.textContent = 'Framework: CCPA';
+    } else if (Cookiebot.regulations.gdprApplies) {
+      dotFw.className = 'status-dot warn';
+      statusFw.textContent = 'Framework: GDPR';
+    } else {
+      dotFw.className = 'status-dot';
+      statusFw.textContent = 'Framework: Other';
+    }
+  }
+
+  if (!isCCPA) {
+    log('warn', '⚠️ CCPA not detected. Workaround will attach but only fire if CCPA applies.');
+    log('info', 'TIP: Use a US-based VPN or proxy to trigger CCPA geo-targeting.');
+  }
+
+  // Find the dialog and look for close/X buttons
+  const dialog = document.getElementById('CookiebotDialog')
+    || document.getElementById('CybotCookiebotDialog')
+    || document.getElementById('CybotCookiebotDialogBodyUnderlay');
+
+  if (!dialog) {
+    log('error', 'Dialog container not found. Cannot attach intercept.');
+    return;
+  }
+
+  // Use MutationObserver + event delegation for robustness
+  // The X button may be rendered async
+  log('info', 'Setting up event delegation on dialog for close button interception...');
+
+  dialog.addEventListener('click', function(e) {
+    // Walk up from the clicked element to find if it's a close/X button
+    let target = e.target;
+    let isCloseBtn = false;
+    let matchInfo = '';
+
+    // Check up to 5 levels of parents
+    for (let i = 0; i < 5 && target && target !== dialog; i++) {
+      const id = (target.id || '').toLowerCase();
+      const cls = (target.className || '').toString().toLowerCase();
+      const aria = (target.getAttribute('aria-label') || '').toLowerCase();
+      const text = (target.textContent || '').trim();
+
+      // Match patterns for the X / close button
+      if (
+        id.includes('close') ||
+        cls.includes('close') ||
+        aria.includes('close') ||
+        cls.includes('decline') ||
+        id.includes('decline') ||
+        // SVG X icon or × character
+        text === '×' || text === 'X' || text === '✕'
+      ) {
+        isCloseBtn = true;
+        matchInfo = `id="${target.id}" class="${target.className}" aria-label="${target.getAttribute('aria-label') || ''}" text="${text.substring(0,20)}"`;
+        break;
+      }
+      target = target.parentElement;
+    }
+
+    if (!isCloseBtn) return; // Not a close button click, let it through
+
+    log('event', `X/Close button clicked! → ${matchInfo}`);
+
+    // Check if workaround is enabled
+    if (!workaroundEnabled) {
+      log('info', 'Workaround DISABLED — default Cookiebot behavior will apply.');
+      return;
+    }
+
+    // Check if CCPA applies (re-check at click time)
+    if (typeof Cookiebot !== 'undefined' && Cookiebot.regulations && Cookiebot.regulations.ccpaApplies) {
+      log('intercept', '🚀 CCPA detected — INTERCEPTING X click!');
+      log('intercept', 'Preventing default decline behavior...');
+
+      // Stop the original handler
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      // Instead of declining, just hide the banner (acknowledge)
+      try {
+        // Option A: Just hide the dialog visually
+        Cookiebot.hide();
+        log('intercept', '✅ Called Cookiebot.hide() — banner dismissed as acknowledge.');
+      } catch (err) {
+        log('error', `Cookiebot.hide() failed: ${err.message}`);
+        // Fallback: hide manually
+        if (dialog) dialog.style.display = 'none';
+        log('intercept', 'Fallback: hid dialog via CSS.');
+      }
+
+      // Update consent state display
+      setTimeout(updateConsentState, 300);
+
+      log('intercept', '✅ X button now acted as ACKNOWLEDGE (not decline) for CCPA.');
+    } else {
+      log('info', 'GDPR or other framework active — letting default X behavior through (decline).');
+      // Don't intercept for GDPR — let it decline as normal
+    }
+  }, true); // useCapture = true to intercept before Cookiebot's own handler
+
+  interceptAttached = true;
+  log('intercept', '✅ Event delegation intercept attached to dialog (capture phase).');
+
+  // Update workaround status
+  document.getElementById('dotWorkaround').className = 'status-dot active';
+  document.getElementById('statusWorkaround').textContent = 'Workaround: ON';
+}
+
+// ============================================================
+// COOKIEBOT EVENT LISTENERS
+// ============================================================
+window.addEventListener('CookiebotOnLoad', function() {
+  log('event', '🟢 CookiebotOnLoad fired');
+  document.getElementById('dotCookiebot').className = 'status-dot active';
+  document.getElementById('statusCookiebot').textContent = 'Cookiebot: loaded';
+  updateConsentState();
+});
+
+window.addEventListener('CookiebotOnDialogDisplay', function() {
+  log('event', '🟢 CookiebotOnDialogDisplay fired — banner is showing');
+  log('info', 'Attempting to attach X button intercept...');
+  // Small delay to let the dialog DOM fully render
+  setTimeout(function() {
+    findCloseButton();
+    attachXIntercept();
+  }, 200);
+});
+
+window.addEventListener('CookiebotOnAccept', function() {
+  log('event', '🟢 CookiebotOnAccept fired');
+  updateConsentState();
+});
+
+window.addEventListener('CookiebotOnDecline', function() {
+  log('event', '🔴 CookiebotOnDecline fired');
+  log('warn', 'Consent was DECLINED. If this fired after clicking X on CCPA, the workaround may not have intercepted correctly.');
+  updateConsentState();
+});
+
+window.addEventListener('CookiebotOnDialogInit', function() {
+  log('event', '🟡 CookiebotOnDialogInit fired');
+});
+
+window.addEventListener('CookiebotOnConsentReady', function() {
+  log('event', '🟢 CookiebotOnConsentReady fired');
+  updateConsentState();
+});
+
+// Fallback: if Cookiebot loaded before our script
+window.addEventListener('DOMContentLoaded', function() {
+  log('info', 'Page loaded. Waiting for Cookiebot events...');
+  if (typeof Cookiebot !== 'undefined') {
+    log('info', 'Cookiebot already available on DOMContentLoaded.');
+    document.getElementById('dotCookiebot').className = 'status-dot active';
+    document.getElementById('statusCookiebot').textContent = 'Cookiebot: loaded';
+    updateConsentState();
+  }
+});
+</script>
+
+</body>
+</html>

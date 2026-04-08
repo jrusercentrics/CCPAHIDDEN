@@ -568,22 +568,30 @@ function attachXIntercept() {
       e.stopImmediatePropagation();
       e.preventDefault();
 
-      // Instead of declining, just hide the banner (acknowledge)
+      // Instead of declining, programmatically click the OK/Accept button
+      // This uses Cookiebot's native flow so consent is properly recorded
       try {
-        // Option A: Just hide the dialog visually
-        Cookiebot.hide();
-        log('intercept', '✅ Called Cookiebot.hide() — banner dismissed as acknowledge.');
+        var okBtn = document.getElementById('CybotCookiebotDialogBodyButtonAccept');
+        if (okBtn) {
+          log('intercept', 'Found OK button → triggering native .click()...');
+          okBtn.click();
+          log('intercept', '✅ Programmatic click on OK button fired — consent should be recorded natively.');
+        } else {
+          log('warn', 'OK button not found — falling back to Cookiebot.submitCustomConsent()...');
+          Cookiebot.submitCustomConsent(true, true, true, true);
+          log('intercept', '✅ Fallback: submitCustomConsent(true,true,true,true) called.');
+        }
       } catch (err) {
-        log('error', `Cookiebot.hide() failed: ${err.message}`);
-        // Fallback: hide manually
-        if (dialog) dialog.style.display = 'none';
-        log('intercept', 'Fallback: hid dialog via CSS.');
+        log('error', `Intercept action failed: ${err.message}`);
+        // Last resort: just hide
+        Cookiebot.hide();
+        log('warn', 'Last resort: called Cookiebot.hide().');
       }
 
       // Update consent state display
-      setTimeout(updateConsentState, 300);
+      setTimeout(updateConsentState, 500);
 
-      log('intercept', '✅ X button now acted as ACKNOWLEDGE (not decline) for CCPA.');
+      log('intercept', '✅ X button now acted as ACCEPT (not decline) for CCPA.');
     } else {
       log('info', 'GDPR or other framework active — letting default X behavior through (decline).');
       // Don't intercept for GDPR — let it decline as normal
